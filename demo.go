@@ -10,25 +10,25 @@ import (
 
 func main() {
 
-	vcapStr := `
-{
-  "vault": [
-   {
-    "credentials": {
-     "root": "secret/ffe43c22-f835-457b-a88e-a87f6ccb8aa6",
-     "token": "efdc7986-bc09-45bc-8353-8399eb915ad6",
-     "vault": "http://10.244.8.3:8200"
-    },
-    "label": "vault",
-    "name": "vault-instance",
-    "plan": "shared",
-    "provider": null,
-    "syslog_drain_url": null,
-    "tags": []
-   }
-  ]
- }
-`
+	// vcapStr := `
+// {
+  // "vault": [
+   // {
+    // "credentials": {
+     // "root": "secret/ffe43c22-f835-457b-a88e-a87f6ccb8aa6",
+     // "token": "efdc7986-bc09-45bc-8353-8399eb915ad6",
+     // "vault": "http://10.244.8.3:8200"
+    // },
+    // "label": "vault",
+    // "name": "vault-instance",
+    // "plan": "shared",
+    // "provider": null,
+    // "syslog_drain_url": null,
+    // "tags": []
+   // }
+  // ]
+ // }
+// `
 
 	// os.Setenv("VCAP_SERVICES", vcapStr)
 
