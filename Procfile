@@ -1,1 +1,1 @@
-web: go-online
+web: vault-demo-app
