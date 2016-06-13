@@ -5,55 +5,32 @@ import (
 	"os"
   "encoding/json"
   "net/http"
-  "time"
 
 	"github.com/hashicorp/vault/api"
+	"github.com/nu7hatch/gouuid"
 )
 
 func main() {
+  // apiClient, path := getClient()
 
-	// vcapStr := `
-// {
-  // "vault": [
-   // {
-    // "credentials": {
-     // "root": "secret/ffe43c22-f835-457b-a88e-a87f6ccb8aa6",
-     // "token": "efdc7986-bc09-45bc-8353-8399eb915ad6",
-     // "vault": "http://10.244.8.3:8200"
-    // },
-    // "label": "vault",
-    // "name": "vault-instance",
-    // "plan": "shared",
-    // "provider": null,
-    // "syslog_drain_url": null,
-    // "tags": []
-   // }
-  // ]
- // }
-// `
+	// go func() {
+		// for {
+		  // if apiClient == nil {
+  //       fmt.Println("Cannot connect to Vault")
+			// } else {
+				// fmt.Println("Reading secret at ", path)
+				// secret, err := apiClient.Read(path)
+				// if err != nil {
+					// fmt.Println("Error in reading secret", err)
+				// }
 
-	// os.Setenv("VCAP_SERVICES", vcapStr)
+				// fmt.Println("secret is ", secret)
+			// }
+			// time.Sleep(5 * time.Second)
+		// }
+  // }()
 
-  apiClient, path := getClient()
-
-	go func() {
-		for {
-		  if apiClient == nil {
-        fmt.Println("Cannot connect to Vault")
-			} else {
-				fmt.Println("Reading secret at ", path)
-				secret, err := apiClient.Read(path)
-				if err != nil {
-					fmt.Println("Error in reading secret", err)
-				}
-
-				fmt.Println("secret is ", secret)
-			}
-			time.Sleep(5 * time.Second)
-		}
-  }()
-
-	http.HandleFunc("/", hello)
+	http.HandleFunc("/secrets", secrets)
 	fmt.Println("listening...")
 	err := http.ListenAndServe(":"+os.Getenv("PORT"), nil)
 	if err != nil {
@@ -61,10 +38,69 @@ func main() {
 	}
 }
 
-func hello(res http.ResponseWriter, req *http.Request) {
-	fmt.Fprintln(res, "go, world")
+
+func secrets(res http.ResponseWriter, req *http.Request) {
+  if req.Method == "GET" {
+    read(res, req)
+	} else if req.Method == "POST" {
+    write(res, req)
+	}
 }
 
+func read(res http.ResponseWriter, req *http.Request) {
+  apiClient, path := getClient()
+
+  var respStr string
+
+	if apiClient == nil {
+		respStr = "Not connected to Vault"
+	} else {
+		fmt.Println("Reading secret at ", path)
+		secret, err := apiClient.Read(path)
+		if err != nil {
+			fmt.Println("Error in reading secret", err)
+		}
+
+		j, _ := json.Marshal(secret.Data)
+		respStr = string(j)
+	}
+
+	fmt.Fprintln(res, respStr)
+}
+
+func write(res http.ResponseWriter, req *http.Request) {
+  apiClient, path := getClient()
+
+	var respStr string
+
+	if apiClient == nil {
+		respStr = "Not connected to Vault"
+	} else {
+		secret, err := apiClient.Read(path)
+		if err != nil {
+			fmt.Println("Error in reading secret", err)
+		}
+
+		fmt.Println("writing secret at ", path)
+
+    u, _ := uuid.NewV4()
+    tenantId := "Tenant_" + u.String()
+    u2, _ := uuid.NewV4()
+    secretId := "Secret_" + u2.String()
+
+		data := secret.Data
+    data[tenantId] = secretId
+
+		_, err = apiClient.Write(path, data)
+		if err != nil {
+			fmt.Println("Error in writting secret", err)
+		}
+
+		respStr = fmt.Sprintf("secret written")
+	}
+
+	fmt.Fprintln(res, respStr)
+}
 
 func getClient() (*api.Logical, string){
 	vcapJson := os.Getenv("VCAP_SERVICES")
@@ -92,7 +128,6 @@ func getClient() (*api.Logical, string){
 	url := credentials.(map[string]interface{})["vault"]
 
 	os.Setenv("VAULT_ADDR", url.(string))
-  // os.Setenv("VAULT_TOKEN", "efdc7986-bc09-45bc-8353-8399eb915ad6")
 
   config := api.DefaultConfig()
 
