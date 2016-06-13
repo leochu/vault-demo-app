@@ -61,8 +61,12 @@ func read(res http.ResponseWriter, req *http.Request) {
 			fmt.Println("Error in reading secret", err)
 		}
 
-		j, _ := json.Marshal(secret.Data)
-		respStr = string(j)
+    if secret == nil {
+      respStr = "{}"
+		} else {
+			j, _ := json.Marshal(secret.Data)
+			respStr = string(j)
+		}
 	}
 
 	fmt.Fprintln(res, respStr)
@@ -88,7 +92,13 @@ func write(res http.ResponseWriter, req *http.Request) {
     u2, _ := uuid.NewV4()
     secretId := "Secret_" + u2.String()
 
-		data := secret.Data
+		var data map[string]interface{}
+		if secret == nil {
+      data = make(map[string]interface{})
+		} else {
+			data = secret.Data
+		}
+
     data[tenantId] = secretId
 
 		_, err = apiClient.Write(path, data)
